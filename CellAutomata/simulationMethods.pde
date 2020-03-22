@@ -2,9 +2,11 @@
   This file contains methods like checkNeighbors, timer, etc.
 */
 
+
+
 class CivStart {
   /**
-    Stores the X and Y coordinates, and the ID for new civilizations
+    Stores the X and Y coordinates, and the ID for new civilizations, also draws a circle around the first entity of each civilization
   */
   int x, y, civilizationID;
   CivStart (int x, int y, int civilizationID) {
@@ -14,72 +16,130 @@ class CivStart {
   }
 
   void draw () {
+    //logEvent("civilizationID: " + civilizationID, 'd');
     noFill();
     stroke(determineCivColor(civilizationID));
-    ellipse(x, y, 15, 15);
+    ellipse(x, y, 15, 15); // Drawing a circle at the spawn of each civilization
     fill(determineCivColor(civilizationID));
+
     textAlign(LEFT, CENTER);
     text("CIV " + civilizationID, x + 15, y - 2);
-    text("civilization " + civilizationID + " stats:", 920, (80 * civilizationID) / 2 + 20);
+    // Displaying the true population (does NOT support battles/death)
+    text("civilization " + civilizationID + " population: " + civPopulations[civilizationID - 1], 920, (80 * civilizationID) / 2 + 20);
+    // civilizationID - 1 is due to the black civilization
+     text("civilization " + civilizationID + " map control: " + getCivMapCoverage(civilizationID - 1) + "%", 920, (80 * civilizationID) / 2 + 40); // second
     textAlign(CORNERS);
+
   }
 }
 
-static class Defaults {
-  /**
-    Contains default values for new civilization entities
-  */
-  static int health = 35; // 0/50
-  static int strength = 25; // 0/50
-  static float degenerationRate = 0.1; // The rate at which an individual's strength decreases
-  static int intellect = 20; // 0/50
-  static int happiness = 30; // 0/50
-  static int researchPoints = 5;
-  static int reproductionThreshold = 75;
+//TODO finish this
+int childX; // Declare the new X and Y positions of the child to be created
+int childY;
+void reproduceWithinRadius (int parentX, int parentY, int radius, int childID) {
+    childX = round(random(parentX - radius, parentX + radius)); // Initialize the new X and Y positions with random values that are withing a certain radius
+    childY = round(random(parentY - radius, parentY + radius));
+    while (childX <= 0 || childX >= worldSize || childY <= 0 || childY >= worldSize) {
+      childX = round(random(parentX - radius, parentX + radius));
+      childY = round(random(parentY - radius, parentY + radius));
+    }
+    if (entities[childX][childY].civID == 0 && terrain[childX][childY].type != 'v') {
+        // Check if the new X and Y positions are within the world, and not already occupied by a civilization.
+        entities[childX][childY] = new Entity(childX, childY, childID); // Create a child
+        civPopulations[childID - 1] ++;
+    }
 }
 
-int tickTimer = 0;
-void worldTimer () {
 
-  if ((tickTimer % 10) == 0) // Every 10 times tickTimer is called, this is called
-  {
-    yearsPassed ++; // Adding a year to the game time
+
+
+
+
+
+
+
+
+// civPopulations[childID - 1] -= 810000;
+
+int emptyPop = 0;
+
+void updateEntities () {
+
+  // Only run once per year
+  if (yearsPassed != lastYearsPassed) {
+
+    // Call once per draw call
+    noStroke();
+    loadPixels();
+
+    for (int x = 0; x < worldSize; x ++) {
+      for (int y = 0; y < worldSize; y ++) {
+          entities[x][y].update();
+          pixels[x + y * width] = color(determineCivColor(entities[x][y].civID));
+
+          if (entities[x][y].civID == 0) {
+            emptyPop ++;
+            // println(x + ", " + y);
+          }
+      }
+    }
+    updatePixels();
+    lastYearsPassed = yearsPassed;
   }
-  tickTimer ++; // Every time draw is called, this adds one to tickTimer
+  for (int i = 0; i < civilizations.length; i ++) {
+    civStartLocations[i].draw(); // Displays circles around the start locations of each civilization
+  }
+
 }
 
 void createEmptyWorld () {
-  for (int x = 0; x < worldSize; x ++) {
-    for (int y = 0; y < worldSize; y ++) {
-      health[x][y] = 0; // Affects the degenerationRate of each individual
-      strength[x][y] = 0; // This determines how the individual performs in battle, if it reaches 0 either due to degeneration or battle, the individual dies
-      degenerationRate[x][y] = 0; // The rate at which an individual's strength decreases, if their strength reaches 0, they die.
-      intellect[x][y] = 0; // Increases overall researchPoints for a civilization
-      happiness[x][y] = 0; // Affects health of each individual
-      reproduction[x][y] = 0; // Individual value, if it reaches reproductionThreshold, a new individual is created.
+  // create a 2D array of blank people, only run once
+  for (int x = 0; x < entities.length; x ++) {
+    for (int y = 0; y < entities[x].length; y ++) {
+      entities[x][y] = new Entity(x, y, 0);
     }
   }
+
+  // for (int x = 100; x < 600; x ++) {
+  //   for (int y = 400; y < 800; y ++) {
+  //     terrain[x][y] = new Terrain(x, y, 'v');
+  //   }
+  // }
+
 }
 
 int civID = 0;
 void createCivs (int numberToCreate) {
 
   for (int i = 0; i < numberToCreate; i ++) {
-    int x = round(random(0, worldSize - 1));
-    int y = round(random(0, worldSize - 1));
+    int x = round(random(15, worldSize - 15));
+    int y = round(random(15, worldSize - 15));
 
-    health[x][y] = Defaults.health; // Affects the degenerationRate of each individual
-    strength[x][y] = Defaults.strength; // This determines how the individual performs in battle, if it reaches 0 either due to degeneration or battle, the individual dies
-    degenerationRate[x][y] = Defaults.degenerationRate; // The rate at which an individual's strength decreases, if their strength reaches 0, they die.
-    intellect[x][y] = Defaults.intellect; // Increases overall researchPoints for a civilization
-    happiness[x][y] = Defaults.happiness; // Affects health of each individual
-    reproduction[x][y] = 0; // Individual value, if it reaches reproductionThreshold, a new individual is created.
     civID ++;
-    // researchPoints[]
-    civStartLocations[i] = new CivStart(x, y, civID);
+    civStartLocations[i] = new CivStart(x, y, civID); // Storing the coordinates and the civilization ID for the starting people
     civilizations[i] = civID; // Assigns a civID to each of the new civs
-    civEntity[x][y] = civID; // Assigns x and y values to a certain civilization ID
-    println("[SUCESS] created civ at " + x + ", " + y + " with ID " + civID);
-    println("[INFO] person of civ " + civID + " has variables: health - " + health[x][y] + "; strength - " + strength[x][y] + "; degenerationRate - " + degenerationRate[x][y] + "; intellect - " + intellect[x][y] + "; happiness - " + happiness[x][y] + "; reproduction - " + reproduction[x][y] + "; \n");
+
+    if (civID > 1) {
+      // Check if this isn't the first civilization to be created
+      for (int j = 1; j < civID; j ++) {
+        while (civStartLocations[j - 1].x == x && civStartLocations[j - 1].y == y) {
+          // This civilization's spawn is on top of another civilization's spawn
+          x = round(random(15, worldSize - 15));
+          y = round(random(15, worldSize - 15));
+
+          int newX = round(random(x - 2, x + 2));
+          int newY = round(random(y - 2, y + 2));
+          civStartLocations[i].x = x;
+          civStartLocations[i].y = y;
+
+          logEvent("Civilization " + civID + " spawned on top of civilization " + j + ", we are moving spawn of civilization " + civID + " to X: " + x + ", Y: " + y + ".", 'w');
+          logEvent("Years after move: " + yearsPassed, 'd');
+        }
+      }
+    }
+
+    entities[x][y] = new Entity(x, y, civID);
+
+    logEvent("Created civ at " + x + ", " + y + " with ID " + civID, 's');
   }
 }
