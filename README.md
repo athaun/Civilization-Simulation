@@ -17,20 +17,5 @@ licensed under the MIT license
 
 Version: 0.1.1
 
-## Changelog
-
-
-1/3/2020
-- Created array foundations
-- Added civilization creation
-- Added display loops
-- Added colors for civilizations
-
-1/4/2020
-- Increased the information panel
-- Tuned the Population Variables to be larger
-- Added civilization IDs
-- Added more possible civilization colors (10)
-- Display circle around starting positions for each civilization
-- Display stats for each civilization in information panel
-- Added version.txt
+## screenshot
+![screenshot](/2020-04-23_15-15.png)
