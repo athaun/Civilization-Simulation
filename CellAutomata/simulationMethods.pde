@@ -43,7 +43,7 @@ void reproduceWithinRadius (int parentX, int parentY, int radius, int childID) {
       childX = round(random(parentX - radius, parentX + radius));
       childY = round(random(parentY - radius, parentY + radius));
     }
-    if (entities[childX][childY].civID == 0 && terrain[childX][childY].type != 'v') {
+    if (entities[childX][childY].civID == 0/* && terrain[childX][childY].type != 'v'*/) {
         // Check if the new X and Y positions are within the world, and not already occupied by a civilization.
         entities[childX][childY] = new Entity(childX, childY, childID); // Create a child
         civPopulations[childID - 1] ++;
